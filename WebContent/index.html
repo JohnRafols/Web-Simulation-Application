@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<body>
+
+<script type = "text/javascript" src = "abc.js"></script>
+<script src = "d3.js" ></script>
+
+<p>"NONONONONONO"</p>
+<p>"EVERYBODY GET DANGEROUS"</p>
+
+<script>
+
+
+d3.selectAll("p").text("Hello world!");
+d3.select("body").append("p").text(" world!");
+console.log(d3);
+
+
+var canvas = d3.select("body").append("svg").attr("width", 500).attr("height", 500);
+var circle = canvas.append("circle")
+.attr("cx", 200)
+.attr("cy", 200)
+.attr("r", 100)
+.attr("fill", "red");
+
+
+</script>
+
+
+
+<button type = "button" onclick = "message()"> Give me the date </button>
+<button type = "button" onclick = "string()"> "String tester" </button>
+
+<input type = "button" value = "Put a word in please" onclick = "palindrome()"> 
+<input type = "button" value = "Recursion" onclick = "main()"> 
+
+
+
+</body>
+</html>
