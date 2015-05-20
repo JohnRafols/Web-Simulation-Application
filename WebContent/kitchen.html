@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Kitchen Application</title>
+
+<style type= "text/css">
+	.buttons{
+    	width: 20em;  height: 2em;
+	}
+</style>
+
+<style type="text/css">
+	body{
+		background-image:url('kitchen.jpg');
+		background-size: 100%;
+	}
+
+	#kitchenTool{
+/* 		position:fixed; */
+		display: block;
+		margin: auto;
+		margin-top: 50px;
+
+	}
+	#top{
+		width:100%;
+		height: 100px;
+		background-color: green;
+		margin-bottom: 10px;
+ 		position: relative; 
+		display: block;
+		margin: auto;
+		text-align:center;
+		font-size:2.5em;
+		font-family: Arial;		
+	}
+	#info{
+		width:100%;
+		height: 150px;
+		background-color: green;
+ 		position: relative; 
+		display: block;
+		margin: auto;
+ 		text-align:center; 
+ 		font-size:1.2em; 
+		font-family: Arial;
+	}
+
+</style>
+
+</head>
+<body>
+
+
+<script src = "d3.js" ></script>
+
+
+	<div id = "top">
+			<a href = "index.html" style="text-decoration:none"> Home Page </a>
+		<a href = "sport.html" style="text-decoration:none"><br> Sport App </a>
+	</div>
+
+<script>
+var functions;
+
+	var currentstep = 0;
+	var currentLine = 0;
+	var currentrecipe = 0;
+	var time = 0;
+		
+	var width = 800;
+	var height = 500;
+	var canvas = d3.select("body").append("svg")
+								.attr("width", width)
+								.attr("height", height)
+								.attr("id", "kitchenTool")
+	
+	var group = canvas.append("g");
+	
+	
+ 	 d3.json("kitchendata.json", function(data){ 		
+		function drawrect(){
+			group.attr("transform" ,"scale(0)");
+			group.append("rect")
+				.attr("x", 60)
+				.attr("y", 10)
+				.attr("stroke-width", 5)
+				.attr("stroke", "black")
+				.attr("width", width/1.2)
+				.attr("height", height/1.5)
+				.attr("fill", "none")
+			//Draw the current recipe's title		
+			group.append("text")
+				.attr("class", "recipe_name")
+				.attr("x", 0)
+				.attr("y", 50)
+				.attr("transform", 
+						"translate("+ 100 + "," + currentLine * 20 + ")"
+					)
+				.text(data[currentrecipe].name)			
+				.attr("fill", "black")	
+				.attr("font-weight", "bold")
+
+				currentLine = currentLine +2;
+			
+				
+			draw_instructions();
+					
+			//Draw the current instruction's text	
+			draw_currentstep(data[currentrecipe].steps[currentstep]);
+			
+			group.transition()
+	    		.duration(500)
+	    		.attr("transform" ,"scale(1)");	
+				
+		}
+
+		function draw_instructions(){
+			//console.log("Hey")
+				for(var i = 0; i<data[currentrecipe].ingredients.length; i++){
+					group.append("text")
+							.attr("class", "current_text")
+							.attr("x", 0)
+							.attr("y", 50)
+							.attr("font-weight", "bold")
+							.attr("transform", 
+									"translate("+ 100 + "," + currentLine * 20 + ")"
+								)
+							.text(data[currentrecipe].ingredients[i]);	
+					currentLine++;				
+				}
+				currentLine++;				
+
+		}
+		
+   		 //d3 can't formally automatically fit text into shapes...
+		function draw_currentstep(text){	
+   			var x = text.slice(0 , 65);	
+			group.append("text")
+				.attr("class", "current_text")
+				.attr("x", 0)
+				.attr("y", 50)
+				.attr("transform", 
+						"translate("+ 100 + "," + currentLine * 20 + ")"
+					)
+				.text(x)
+				.attr("fill", "black")			
+			currentLine++;		
+			if(x != ""){
+				draw_currentstep(text.slice(65))
+			}		 
+			group.attr("transform" ,"scale(0)");
+			group.transition()
+		    		.duration(500)
+		    		.attr("transform" ,"scale(1)")	
+					//.attr("stroke", "grey")
+			
+		}
+		
+		function next_step(){
+			currentstep++;		
+			currentLine = 2;
+			//Remove any text inside
+			group.selectAll(".current_text").remove();	
+			
+			if(data[currentrecipe].steps[currentstep] == null) {
+				currentstep = 0;
+				draw_instructions();
+			}
+			draw_currentstep(data[currentrecipe].steps[currentstep]);
+		}
+		
+		function previous_step(){		
+			currentstep--;
+			currentLine = 2;
+			//Remove any text inside
+			group.selectAll(".current_text").remove();
+			
+
+   			if (currentstep == 0 ) draw_instructions();
+
+			if(data[currentrecipe].steps[currentstep] == null) {
+				currentstep = data[currentrecipe].steps.length-1;								
+			}
+			draw_currentstep(data[currentrecipe].steps[currentstep]);
+		}
+		
+		
+		//Timer:
+		var timer;
+		var printTimer;
+		//var time = data[currentrecipe].timer;
+		function resume_timer(){		
+			timer = window.setInterval(function(d){return next_step()}, "5000");
+			//printTimer = window.setInterval(function(d){return print_time()}, "100");
+	
+		}
+		
+		function pause_timer(){
+			window.clearInterval(timer);
+			//window.clearInterval(printTimer);
+		}
+		
+		
+		function change_recipe(){
+			var choices = ""; 
+			for(var count = 0; count<data.length; count++ ){
+					choices =  choices + " " + (count+1) + ".) " + data[count].name; 			
+			}			
+				
+			var name = prompt("What recipe would you like: " + choices );
+			var c = currentrecipe;
+			for(var count = 0; count<data.length; count++ ){
+				if(data[count].name == name){
+					currentrecipe = count; 
+				}			
+			}
+			if(c != currentrecipe){
+				//Remove everything
+				group.selectAll("text").remove();
+				group.selectAll("rect").remove();
+				currentLine = 0;
+				currentstep = 0;
+				drawrect();
+			}
+		}
+			
+		//This creates buttons for user input.
+		function drawButtons(){		
+			 functions = [
+			               		 {
+			                		"name": "Next step",
+			                		"function":"next_step()"
+			                	 },
+			                	 {
+			                		 "name": "Previous step",
+			                		 "function" : "previous_step()"
+			                	 },
+			                	 {
+			                		 "name" : "Auto-Play",
+			                		 "function": "resume_timer()"
+			                	 },
+			                	 {
+			                		 "name" : "Pause",
+			                		 "function" : "pause_timer()"
+			                	 },			                
+			                	 {
+			                		 "name" : "Change Recipe",
+			                		 "function": "change_recipe()"
+			                	 }
+			                 ];
+			  
+			//Since json files are asynchronous, trying to append buttons to the html file will be troublesome
+			//I'll have shapes disguise themselves as buttons.
+			var insgroup = canvas.append("g")
+			
+			insgroup.selectAll("rect")
+					.data(functions)
+					.enter()
+						.append("rect")
+						.attr("class", "buttons")
+						.attr("x", function(d,i){return i*100 +150})
+						.attr("y", height/1.4)
+						//.attr("stroke-width", 5)
+						.attr("stroke", "black")
+						.attr("width", 100)
+						.attr("height", 100)
+						.attr("fill", "grey")
+						.on("mouseover", function(d){
+							d3.select(this).transition().attr("fill", "lightgray");
+							})
+						.on("mouseout", function(d){
+							d3.select(this).transition().attr("fill", "grey")
+						})	
+						.on("mousedown", function(d){ 
+							d3.select(this).transition().attr("fill", "darkgray");
+							return eval(d.function)
+
+						})	
+			
+				insgroup.selectAll("text")
+						.data(functions)
+						.enter()
+							.append("text")
+							.text(function(d){return d.name})
+							.attr("x", function(d,i){return i*100 +200})
+							.attr("y", height/1.4+50)
+							.attr("text-anchor", "middle")
+							.attr("font-size", "0.8em")
+
+																	
+		}	
+		drawrect();
+		drawButtons();
+ 	 })
+ 	 
+ 	 
+</script>
+
+<div id = "info">
+This application is a cooking assistant tool. 
+<br>
+The idea is that a recipe is instructed to a user in real time while he is cooking. 
+<br>
+The name, ingredients, and steps of a recipe are displayed onscreen.
+<br>
+To navigate through the steps, press the next/previous step button.
+<br>
+To have the recipe's automatically move, Press "Auto-play" and wait five seconds. 
+<br>
+To change recipe, press the "Change Recipe" button.
+</div>
+
+</body>
+</html>

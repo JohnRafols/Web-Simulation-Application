@@ -2,43 +2,280 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Insert title here</title>
+<title>Victoria Viewers demo</title>
+
+<style type="text/css">
+	body{
+		background-image:url('interior.jpg');
+		background-size: 100%;
+	}
+	#glasses{
+		display: block;
+		margin: auto;
+		margin-top: 50px;
+	}
+	#top{
+		width:100%;
+		height: 100px;
+		background-color: green;
+/* 		margin-bottom: 10px; */
+ 		position: relative; 
+		display: block;
+		margin: auto;
+		text-align:center;
+		font-size:2.5em;
+		font-family: Arial;
+	}
+	#info{
+		width:100%;
+		height: 150px;
+		background-color: green;
+ 		position: relative; 
+		display: block;
+		margin: auto;
+ 		text-align:center; 
+ 		font-size:1.2em; 
+		font-family: Arial;
+	}
+</style>
+
 </head>
 <body>
 
-<script type = "text/javascript" src = "abc.js"></script>
+
 <script src = "d3.js" ></script>
+	
 
-<p>"NONONONONONO"</p>
-<p>"EVERYBODY GET DANGEROUS"</p>
+	
+	<div id = "top">
+		<a href = "kitchen.html" style="text-decoration:none"> Kitchen App </a>
+		<a href = "sport.html" style="text-decoration:none"> <br> Sport App </a>
+	</div>
 
-<script>
+	<script>	
+	var canvas = d3.select("body").append("svg")
+							.attr("width", 1200)
+							.attr("height", 600)
+							.attr("id", "glasses")
+							.attr("margin", "auto")
+							
+	var group = canvas.append("g")
+							.attr("transform", "translate(300,300)")	
+							
+	//When this code runs, two circles are generated to represent the "glasses."
+	var leftpos = 300;
+	var rightpos = leftpos*3
+	var left = makeglasses(leftpos, "left", "right")
+	var right = makeglasses(rightpos, "right", "left")
 
+	//These represent the "pupils" of the glasses
+	var pupilgroup = canvas.append("g")
+	
+	
+	function makeglasses(n, position, opp_position){
+		//Paths and various shapes testing
+		var closed_eye = false;
+		var closing_eye;
+		var c;
+		var current_rotation;
+		
+		//Donut chart
+			//1.) Specify, data, color, and specify outer radius
+					
+			//The data 
+			var data = [1, 1, 1, 1];		
+			var color = d3.scale.linear()
+							.domain([0, 1, 2, 3])
+							.range(["lavender", "beige", "gold", "green"]);				
+			var r = 300;
+			
+			//1.) This is a "SVG group element," use it for grouping shapes
+			group = canvas.append("g")
+							.attr("transform", "translate(" + n + "," + 300 + ")" )
+			
+			
+			//2.) These represent individual arcs, if you want pie chart, make inner radius 0
+			var arc = d3.svg.arc()
+							.innerRadius(250)
+							.outerRadius(r);
+			
+			//3.) Pie layout
+			var pie = d3.layout.pie()
+							.value(function(d){return d;})
+			
+			//4.) Normally you would add the items to the canvas. 
+			// Here, you add it to the group element, you omit the data into the pie layout you made
+			var arcs = group.selectAll(".arc")
+							.data(pie(data))
+							.enter()
+								.append("g")
+								.attr("class", "arc")
+			
+			//Center circle representing pupils...	
+			make_pupil(n, position, opp_position);
+					
+			//5.) The next two steps make the Donut				
+								
+			//Appending the paths for the arcs
+			arcs.append("path")
+				.attr("d", arc)
+				.attr("fill", function(d, i){return color(i);})
+				.on("mouseover", function(d){	
+							d3.select(this)
+								.transition()
+								.attr("fill", "red");	
+						})
+				.on("mouseout", function(d,i){
+							d3.select(this)
+								.transition()
+								.attr("fill", function(d){return color(i);})
+				})
+				
+			
+			//Adding text	
+			arcs.append("text")
+				.attr("transform", 
+						function(d){return "translate(" + arc.centroid(d) + ")";})
+				.attr("text-anchor", "middle")
+				.attr("font-size", "0.8em")
+				.text(function(d,i){ return "Option " + (i+1)})		
+							
+		//Rotation methods
+		    function rotate(){	
+				//Make a method that returns rotations from 0-360				
+				function rot() {
+				    var i = d3.interpolate(0, 360);
+				    return function(t) {
+				    	current_rotation = i(t);
+				        return "rotate(" + i(t) + "," + 0 + "," + 0 + ")";
+				    }
+				}
+				c = canvas.selectAll(".arc")
+						.transition().duration(2000)
+			  		    .attrTween("transform", rot);	
+				}
+				
+			function rotateback(){
+				//Make a method that sets back the circle
+				function rot() {
+				    var i = d3.interpolate(current_rotation, 0);
+				    return function(t) {
+				        return "rotate(" + i(t) + "," + 0 + "," + 0 + ")";
+				    }
+				}
+				canvas.selectAll(".arc")
+						.transition().duration(1000)
+			  		    .attrTween("transform", rot);	
+			}
+			
+			function changepage(){
+				var location;
+				if(position == "right"){
+					location = 'kitchen.html';
+				}
+				else location = 'sport.html'
+				document.location.href = location;
+			}
+			
+			function updatecentertext(text, o){
+				//	The text must be appended to the opposite circle's position...
+				var truePosition = n;
+				if(o == "right"){
+					truePosition = n*3;
+				}
+				else truePosition = n/3;
+				
+				d3.select("." + o + "text")
+								.attr("transform", "translate("+ truePosition + "," + 300 + ")")
+								.attr("text-anchor", "middle")
+								.html(text)
+								.attr("fill", "black")
+			}	
+		
+			function make_pupil(n, position, opp_position){
+				pupilgroup = canvas.append("g")
+				
+				pupilgroup.append("circle")
+					.attr("class", position)
+						.attr("fill", "grey")
+						.attr("cx", n)
+						.attr("cy", 300)
+						.attr("r", r/4)
+										
+				pupilgroup.append("text")
+					.attr("class", position + "text")
+							.attr("transform", "translate("+ n + "," + 300 + ")")
+							.attr("text-anchor", "middle")
+							.html("Close one eye")
+							.attr("fill", "black")
+		   				
+				pupilgroup.select("." + position)
+						.on("mousedown", function(d){		
+							d3.select("." + opp_position)
+									.transition()
+									.duration(500)
+									.attr("r", 0)
 
-d3.selectAll("p").text("Hello world!");
-d3.select("body").append("p").text(" world!");
-console.log(d3);
-
-
-var canvas = d3.select("body").append("svg").attr("width", 500).attr("height", 500);
-var circle = canvas.append("circle")
-.attr("cx", 200)
-.attr("cy", 200)
-.attr("r", 100)
-.attr("fill", "red");
-
-
-</script>
-
-
-
-<button type = "button" onclick = "message()"> Give me the date </button>
-<button type = "button" onclick = "string()"> "String tester" </button>
-
-<input type = "button" value = "Put a word in please" onclick = "palindrome()"> 
-<input type = "button" value = "Recursion" onclick = "main()"> 
-
-
+							d3.select(this)
+								.transition()
+								.duration(500)
+								.attr("r", 300)
+								.attr("fill", "black")
+								
+							closing_eye = window.setTimeout(function(d){return eyeclosed()}, 2000);
+							function eyeclosed(){
+								updatecentertext("Open your eye now", opp_position);
+								closed_eye = true;
+							}
+							
+								
+								updatecentertext("Loading...", opp_position);
+								rotate();
+							})
+						.on("mouseup", function(d){ 
+							//Show...							
+							d3.select("." + opp_position)
+									.transition()
+									.duration(500)
+									.attr("r", r/4)
+									.attr("fill", "grey")
+												
+							d3.select(this)
+								.transition()
+								.duration(500)
+								.attr("r", r/4)
+								.attr("fill", "grey")
+							//Do not do if...
+								window.clearTimeout(closing_eye);
+								if(closed_eye){
+									closed_eye = false;
+									changepage();									
+								}
+								else		
+								  	canvas.selectAll(".arc").transition().duration(0)
+										
+									updatecentertext("Close one eye", opp_position);
+									rotateback();
+								}
+							)	
+											
+				}	
+		}		
+	</script>
+<br>
+<div id = "info">
+If you click and hold on one of the pupils, an animation will play. This represents you closing your eye.
+<br>
+ One “eye” will turn black while the “frames” of the glasses will start rotating to
+  implicate the glasses sensed your eye is closed. 
+  <br>
+  Wait for a few seconds before letting your click go 
+  <br>
+  <br>
+  If you close and hold the left eye, you will open up a sport application.
+  <br>
+  If you close and hold the right eye, you will open up a kitchen application
+</div>
 
 </body>
 </html>

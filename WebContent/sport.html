@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Sport Application</title>
+
+<style type="text/css">
+	body{
+		background-image:url('gym.jpg');
+		background-size: 100%;
+		
+	}
+
+	#sportTool{
+/* 		position:fixed; */
+		display: block;
+		margin: auto;
+		margin-top: 50px;
+
+	}
+	#top{
+		width:100%;
+		height: 100px;
+		background-color: green;
+		margin-bottom: 10px;
+ 		position: relative; 
+		display: block;
+		margin: auto;
+		text-align:center;
+		font-size:2.5em;
+		font-family: Arial;
+			}
+	#b{
+		display: block;
+		margin: auto;
+		margin-top: 50px;
+		text-align: center;
+	}		
+	#info{
+		width:100%;
+		height: 150px;
+		background-color: green;
+ 		position: relative; 
+		display: block;
+		margin: auto;
+ 		text-align:center; 
+ 		font-size:1.2em; 
+		font-family: Arial;
+	}
+</style>
+
+</head>
+<body>
+
+
+<script src = "d3.js" ></script>
+
+	
+	<div id = "top">
+		<a href = "index.html" style="text-decoration:none">  Home Page </a>
+		<a href = "kitchen.html" style="text-decoration:none"> <br> Kitchen App </a>
+	</div>
+
+
+
+	
+	<script>
+	var total_reps = 10;
+	var total_performance = 0;
+	var current_rep = 0;
+	var color = d3.scale.linear()
+						.domain([0, 100])
+						.range(["red","yellow"]);
+	
+	var data = [{"rep": 0,"performance": 0,}];
+	
+	var width = 700;
+	var height = 300;
+	var margin = 50;
+	var canvas = d3.select("body")
+					.append("svg")
+					.attr("width", width)
+					.attr("height", height)
+					.attr("id", "sportTool")
+
+	var group = canvas.append("g")
+									//.attr("fill", "white")
+
+	
+	
+	function scattergraph(newGraph){	
+		//In case the user prompts to make the graph again, check newGraph to see if this is a new graph...
+		//Ask the user how many reps would he would like to do, and remove any detail
+		if(newGraph){
+			total_reps = prompt("How many reps will you do?");
+			remove_information()
+			total_performance = 0;
+			group.remove("*");
+			group = canvas.append("g")
+		}
+
+		
+		//x axis info
+		var x_entent = d3.extent(data, function(d){	return d.rep;});
+		var x_scale = d3.scale.linear()
+							.domain([1, total_reps])
+							.range([margin, width-margin]);		
+		var x_axis = d3.svg.axis().scale(x_scale);
+		
+		//y axis info
+		var y_extend = d3.extent(data, function(d){	return d.performance;});
+		var y_scale = d3.scale.linear()
+							.domain([0,100])
+							.range([height-margin, margin])
+		var y_axis = d3.svg.axis().scale(y_scale).orient("left");
+		
+		
+		//Append the x-axis
+		group.append("svg")
+				.append("g")
+					.attr("class","x axis")
+					.attr("transform", "translate(0," + (height-margin) + ")")
+					.call(x_axis)
+		d3.select(".x.axis")
+				.append("text")
+				.text("Rep number")
+				.attr("x", (width/2)-margin)
+				.attr("y", margin);
+
+		//Append the y-axis
+		group.append("svg")			
+				.append("g")
+					.attr("class","y axis")
+					.attr("transform", "translate("+ margin + ", 0)")
+					.call(y_axis)		
+		d3.select(".y.axis")
+				.append("text")
+				.text("Performance")
+				.attr("transform", "rotate (-90, -38, 0) translate(-280)")
+		
+		//Animation 		
+		group.selectAll("path")
+				.attr("transform" ,"scale(0)")
+				.transition()
+				.duration(500)
+				.attr("transform" ,"scale(1)");			
+	}
+	
+	function add(){
+		if(current_rep == total_reps){
+			//Remove all info on the graph, as well as remove unnecessary data
+			remove_information();
+			//Show results:
+			final_results(total_performance/total_reps);
+			return;
+		}
+		var performance =  Math.floor((Math.random() * 100) + 1); 		
+		data.push({"rep": current_rep, "performance": performance,});
+		
+		current_rep++;
+		total_performance = total_performance + data[data.length-1].performance
+		update()	
+	}
+	
+	function update(){
+		// Scale the range of the data again 
+        var x_entent = d3.extent(data, function(d){	return d.rep;});
+		var x_scale = d3.scale.linear()
+							.domain([0, total_reps-1])
+							.range([margin, width-margin]);	
+		//y axis info
+		var y_extend = d3.extent(data, function(d){	return d.performance;});
+		var y_scale = d3.scale.linear()
+							.domain([0,100])
+							.range([height-margin, margin])
+		
+		
+		// Make the changes	 	
+		group.append("circle")
+					.attr("cx", function(d){
+						return x_scale(data[data.length-1].rep);
+					})
+					.attr("cy", function(d){
+						return y_scale(data[data.length-1].performance)
+					})
+					.attr("r", 50)
+					.attr("fill", color(data[data.length-1].performance))
+					.transition()
+					.duration(500)
+					.attr("r", 5)
+		
+		//Temporary make text pop up
+		group.append("text")
+				    .attr("x", function(d){
+						return x_scale(data[data.length-1].rep);
+					})
+					.attr("y", function(d){
+						return y_scale(data[data.length-1].performance)
+					})
+					.attr("font-size", "3.0em")
+					.transition(1000)
+					.attr("font-size", "1.2em")
+					.text(performance_message(data[data.length-1].performance))
+					.transition()
+					.delay(1000)
+					.remove()
+										
+		var line = d3.svg.line()
+						.x(function(d){return x_scale(d.rep);})
+						.y(function(d){return y_scale(d.performance)});
+		
+		//Get only the last two elements of the data...    
+		var last_pair = [data[data.length-2], data[data.length-1]]
+		
+		group.selectAll("path")
+				.data(data)
+				.enter()
+					.append("path")	
+						.attr("class", "performance_lines")
+						.attr("d",line(last_pair))
+						.attr("stroke", "black")
+				        .attr("stroke-width", 10)
+				        .transition()
+				        .duration(500)
+				        .attr("stroke-width", 2)
+					  	.attr("fill", "none");
+				
+		}
+	
+	function performance_message(percentage){
+		if(percentage<30) return "Bad form!";
+		if (percentage<60) return "Caution!"
+		else return "Good form!"	
+	}
+	
+	function remove_information(){	
+		//Remove all info on the graph, as well as remove unnecessary data
+		//Do not remove the axis!
+		group.selectAll("circle").remove()
+		group.selectAll(".performance_lines").remove()
+		current_rep = 0;
+		data = [{"rep": 0,"performance": 0,}];
+		
+		//This is an animation, the axis's will move
+        //to create an affect implying that it's removing it's information
+		group.selectAll("path")
+				.attr("transform" ,"scale(0)")
+				.transition()
+				.duration(500)
+				.attr("transform" ,"scale(1)");	
+	}
+	
+	function final_results(result){
+		//This determines the message to display, the message tells how the user did his exercise
+		var message = "";
+		if (result<33)
+			message = result.toFixed(1) + "%, Seek medical attention!"
+		else if (result<66) 
+			message = result.toFixed(1) + "%, Please lower the intensity."
+		else 
+			message = result.toFixed(1) + "%, Amazing job!" 
+		
+		group.append("text")
+				.attr("text-anchor", "middle")
+			    .attr("x", width/2)
+				.attr("y", height/2)
+				.attr("font-size", "1.2em")
+				.transition(1000)
+				.attr("font-size", "2.0em")
+				.text(message)
+				.transition()
+				.delay(5000)
+				.remove()
+		
+		total_performance = 0;
+	}
+		
+	
+	scattergraph(false)
+	
+	</script>
+
+<div id = "b">
+
+	<button type="button" onclick="add()">Do Rep</button>	
+    <button type="button" onclick="scattergraph('True')"> Change Reps </button>
+    
+</div>
+    
+ <div id = "info">
+This application is a sport tracker that measures the performance of an exercise in real time.
+<br>
+The device has sensors to track your performance for every time you make a 
+repetition of an exercise.
+<br>
+ A chart is displayed to show the user how well you are doing.
+<br>
+After a whole set of repetitions are done, a score is given in the end and the graph restarts. 
+<br>
+To simulate a rep, press the "Do Rep" Button
+<br>
+To specify the number of reps you want to do, press the "Change Reps" button.
+</div>   
+    
+</body>
+</html>
